@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import reactLogo from "./assets/react.svg";
 import viteLogo from "/vite.svg";
 import "./App.css";
@@ -12,11 +12,49 @@ import {
   Button,
 } from "react-bootstrap";
 import LiveProjects from "./components/liveProjects";
+import { supabase } from "./supabaseClient";
 
 function App() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [projects, setProjects] = useState([]);
 
+  useEffect(() => {
+    getProjects();
+  }, []);
+
+  async function getProjects() {
+    try {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("*")
+        .limit(10);
+      if (error) throw error;
+      if (data != null) {
+        setProjects(data); // [project1,project2,project3]
+      }
+    } catch (error) {
+      alert(error.message);
+    }
+  }
+
+  async function createProject() {
+    try {
+      const { data, error } = await supabase
+        .from("projects")
+        .insert({
+          name: title,
+          description: description,
+      }).single();
+
+      if (error) throw error;
+      window.location.reload();
+    } catch (error) {
+      alert(error.message);
+    }
+  }
+
+  console.log(projects);
   return (
     <>
       <Navbar>
@@ -45,28 +83,17 @@ function App() {
               onChange={(e) => setDescription(e.target.value)}
             />
             <br></br>
-            <Button>Post Now</Button>
+            <Button onClick={() => createProject()}>Create Project on Supabase</Button>
           </Col>
         </Row>
         <hr></hr>
         <h3>Current Live Vine Projects</h3>
         <Row xs={1} lg={3} className="g-4">
-          <br></br>
-          <Col>
-            <LiveProjects />
-          </Col>
-          <Col>
-            <LiveProjects />
-          </Col>
-          <Col>
-            <LiveProjects />
-          </Col>
-          <Col>
-            <LiveProjects />
-          </Col>
-          <Col>
-            <LiveProjects />
-          </Col>
+          {projects.map((project) => (
+            <Col>
+              <LiveProjects project={project} />
+            </Col>
+          ))}
         </Row>
       </Container>
     </>
